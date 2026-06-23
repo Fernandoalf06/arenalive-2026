@@ -293,7 +293,8 @@ function renderPitchEvents(keyEventsArr, homeTeamName, awayTeamName) {
     dot.style.cursor = 'pointer';
     dot.style.fontSize = '1.2rem';
     dot.style.zIndex = '10';
-    dot.title = `${event.clock || ''}' - ${event.text}`;
+    const timeStr = event.clock ? (event.clock.includes("'") ? event.clock : event.clock + "'") : '';
+    dot.title = `${timeStr ? timeStr + ' - ' : ''}${event.text}`;
     
     DOM.pitchEvents.appendChild(dot);
   });
