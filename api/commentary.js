@@ -24,8 +24,11 @@ export default async function handler(req, res) {
       team: e.team ? e.team.displayName : null
     })) : [];
 
+    // Extract boxscore stats
+    const boxscore = data.boxscore ? data.boxscore.teams : null;
+
     res.setHeader('Cache-Control', 's-maxage=10, stale-while-revalidate=20');
-    res.status(200).json({ commentary, keyEvents });
+    res.status(200).json({ commentary, keyEvents, boxscore });
   } catch (error) {
     console.error('Error fetching commentary:', error);
     res.status(500).json({ error: 'Failed to fetch commentary' });
