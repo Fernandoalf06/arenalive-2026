@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0d0d0d" />
+  <title>ArenaLive 2026</title>
+  <link rel="manifest" href="/manifest.json" />
+  <link rel="stylesheet" href="/src/css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Outfit:wght@500;700;900&display=swap" rel="stylesheet">
+</head>
+<body>
+  <header class="top-nav">
+    <div class="logo">ArenaLive <span class="year">2026</span></div>
+    <div class="actions">
+      <button id="btn-push" class="btn icon-btn" aria-label="Enable Push Notifications" title="Enable Notifications">
+        🔔
+      </button>
+      <button id="btn-tts" class="btn icon-btn" aria-label="Enable Audio Narration" title="Toggle Auto-Narration">
+        🔊 <span id="tts-status-dot" class="status-dot disabled"></span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <section id="scoreboard" class="scoreboard view-active">
+      <div class="section-header">
+        <h2>Today's Matches</h2>
+        <span class="live-badge hidden" id="live-indicator">LIVE</span>
+      </div>
+      <div id="matches-container" class="matches-grid">
+        <div class="loader">Fetching live scores...</div>
+      </div>
+    </section>
+
+    <!-- Match Detail Modal / View -->
+    <section id="match-detail" class="match-detail hidden">
+      <button id="btn-back" class="btn-back">← Back to Scoreboard</button>
+      
+      <div class="match-header-hero" id="detail-header">
+        <!-- Match info injected here -->
+      </div>
+
+      <div class="commentary-section">
+        <h3>Live Play-by-Play</h3>
+        <div id="commentary-list" class="commentary-list">
+          <div class="loader">Loading events...</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <template id="tpl-match-card">
+    <div class="match-card">
+      <div class="match-meta">
+        <span class="match-status"></span>
+        <span class="match-clock"></span>
+      </div>
+      <div class="teams">
+        <div class="team home">
+          <img src="" alt="logo" class="team-logo" loading="lazy" />
+          <span class="team-name"></span>
+          <span class="team-score"></span>
+        </div>
+        <div class="team away">
+          <img src="" alt="logo" class="team-logo" loading="lazy" />
+          <span class="team-name"></span>
+          <span class="team-score"></span>
+        </div>
+      </div>
+      <button class="btn btn-view">View Coverage</button>
+    </div>
+  </template>
+
+  <script type="module" src="/src/js/app.js"></script>
+</body>
+</html>
