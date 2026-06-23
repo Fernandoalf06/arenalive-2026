@@ -9,6 +9,7 @@ const DOM = {
   matchesContainer: document.getElementById('matches-container'),
   standingsContainer: document.getElementById('standings-container'),
   statsContainer: document.getElementById('stats-container'),
+  bracketContainer: document.getElementById('bracket-container'),
   
   // Match Detail
   scoreboardView: document.getElementById('scoreboard'),
@@ -19,6 +20,33 @@ const DOM = {
   matchStatsSection: document.getElementById('match-stats-section'),
   statsBars: document.getElementById('stats-bars'),
   pitchEvents: document.getElementById('pitch-events'),
+  
+  // Interactive & Lineups
+  detailTabs: document.querySelectorAll('.detail-tab-btn'),
+  detailTabContents: document.querySelectorAll('.detail-tab-content'),
+  hypeHome: document.getElementById('hype-home'),
+  hypeAway: document.getElementById('hype-away'),
+  hypeStats: document.getElementById('hype-stats'),
+  btnCheerHome: document.getElementById('btn-cheer-home'),
+  btnCheerAway: document.getElementById('btn-cheer-away'),
+  predHome: document.getElementById('pred-home'),
+  predDraw: document.getElementById('pred-draw'),
+  predAway: document.getElementById('pred-away'),
+  btnPredicts: document.querySelectorAll('.btn-predict'),
+  homePlayers: document.getElementById('lineup-home-players'),
+  awayPlayers: document.getElementById('lineup-away-players'),
+  homeBench: document.getElementById('home-bench-list'),
+  awayBench: document.getElementById('away-bench-list'),
+  
+  // Player Modal
+  playerModal: document.getElementById('player-modal'),
+  btnCloseModal: document.getElementById('btn-close-modal'),
+  playerImg: document.getElementById('player-img'),
+  playerName: document.getElementById('player-name'),
+  playerPos: document.getElementById('player-pos'),
+  playerTeamName: document.getElementById('player-team-name'),
+  radarChart: document.getElementById('radar-chart'),
+  playerStatsGrid: document.getElementById('player-stats-grid'),
   
   // Templates
   tplMatchCard: document.getElementById('tpl-match-card'),
@@ -56,8 +84,31 @@ DOM.tabBtns.forEach(btn => {
     if (target === 'stats' && DOM.statsContainer.innerHTML.includes('Fetching')) {
       fetchStats();
     }
+    if (target === 'bracket' && DOM.bracketContainer.innerHTML.includes('Fetching')) {
+      fetchBracket();
+    }
   });
 });
+
+// Detail inner tabs
+if (DOM.detailTabs) {
+  DOM.detailTabs.forEach(btn => {
+    btn.addEventListener('click', () => {
+      DOM.detailTabs.forEach(b => b.classList.remove('active'));
+      DOM.detailTabContents.forEach(c => {
+        c.classList.remove('active-detail-tab');
+        c.classList.add('hidden');
+      });
+      btn.classList.add('active');
+      const target = document.getElementById(btn.getAttribute('data-target'));
+      if (target) {
+        target.classList.remove('hidden');
+        target.classList.add('active-detail-tab');
+      }
+    });
+  });
+}
+
 
 // ==========================================
 // FAVORITES LOGIC
@@ -145,6 +196,7 @@ function renderMatches(matches) {
     card.querySelector('.btn-view').addEventListener('click', () => openMatchDetail(match));
     DOM.matchesContainer.appendChild(clone);
   });
+  if (window.lucide) lucide.createIcons();
 }
 
 // ==========================================
@@ -173,10 +225,16 @@ async function openMatchDetail(match) {
   knownCommentary.clear();
   
   await fetchCommentary();
+  await fetchCheers();
+  await fetchPredictions();
   
   if (pollInterval) clearInterval(pollInterval);
   if (match.state === 'in' || match.state === 'pre') {
-    pollInterval = setInterval(fetchCommentary, 30000);
+    pollInterval = setInterval(() => {
+      fetchCommentary();
+      fetchCheers();
+      fetchPredictions();
+    }, 30000);
   }
 }
 
@@ -189,8 +247,33 @@ async function fetchCommentary() {
     if (data.boxscore) {
       renderBoxscore(data.boxscore);
     }
+    if (data.rosters) {
+      renderLineups(data.rosters);
+    }
   } catch (err) {
     console.error('Failed to fetch commentary', err);
+  }
+}
+
+async function fetchCheers() {
+  if (!currentMatch) return;
+  try {
+    const res = await fetch(`/api/cheers?event=${currentMatch.id}`);
+    const data = await res.json();
+    renderCheers(data);
+  } catch (err) {
+    console.error('Failed to fetch cheers', err);
+  }
+}
+
+async function fetchPredictions() {
+  if (!currentMatch) return;
+  try {
+    const res = await fetch(`/api/predictions?event=${currentMatch.id}`);
+    const data = await res.json();
+    renderPredictions(data);
+  } catch (err) {
+    console.error('Failed to fetch predictions', err);
   }
 }
 
@@ -242,22 +325,22 @@ function renderPitchEvents(keyEventsArr, homeTeamName, awayTeamName) {
   if (!keyEventsArr || keyEventsArr.length === 0) return;
 
   keyEventsArr.forEach(event => {
-    let icon = '📍';
+    let iconName = 'map-pin';
     let typeClass = 'other-event';
     const text = event.text ? event.text.toLowerCase() : '';
     const eventType = event.type ? event.type.toLowerCase() : '';
     
     if (text.includes('goal') || eventType.includes('goal')) {
-      icon = '⚽';
+      iconName = 'crosshair';
       typeClass = 'goal-event';
     } else if (text.includes('red card') || eventType.includes('red')) {
-      icon = '🟥';
+      iconName = 'square';
       typeClass = 'red-card-event';
     } else if (text.includes('yellow card') || eventType.includes('yellow')) {
-      icon = '🟨';
+      iconName = 'square';
       typeClass = 'yellow-card-event';
     } else if (text.includes('substitution') || eventType.includes('sub')) {
-      icon = '🔄';
+      iconName = 'refresh-cw';
       typeClass = 'sub-event';
     } else {
       return;
@@ -265,7 +348,7 @@ function renderPitchEvents(keyEventsArr, homeTeamName, awayTeamName) {
 
     const dot = document.createElement('div');
     dot.className = `pitch-event-dot ${typeClass}`;
-    dot.innerHTML = icon;
+    dot.innerHTML = `<i data-lucide="${iconName}"></i>`;
     
     let leftPct = 50;
     if (event.team) {
@@ -298,6 +381,7 @@ function renderPitchEvents(keyEventsArr, homeTeamName, awayTeamName) {
     
     DOM.pitchEvents.appendChild(dot);
   });
+  if (window.lucide) lucide.createIcons();
 }
 
 function renderCommentary(commentaryArr, keyEventsArr) {
@@ -333,7 +417,7 @@ function renderCommentary(commentaryArr, keyEventsArr) {
       }
     }
 
-    let goalBadge = c.text.toLowerCase().includes('goal') ? '<span style="font-size:1.5rem">⚽</span> ' : '';
+    let goalBadge = c.text.toLowerCase().includes('goal') ? '<span class="goal-badge"><i data-lucide="crosshair"></i></span> ' : '';
 
     el.innerHTML = `
       <div class="commentary-time">${c.time ? c.time : "•"}</div>
@@ -341,6 +425,7 @@ function renderCommentary(commentaryArr, keyEventsArr) {
     `;
     DOM.commentaryList.appendChild(el);
   }
+  if (window.lucide) lucide.createIcons();
 }
 
 // ==========================================
@@ -457,6 +542,253 @@ function renderStats(statsArray) {
 }
 
 // ==========================================
+// PREDICTIONS & CHEERS
+// ==========================================
+function renderCheers(data) {
+  const home = parseInt(data.home_cheers) || 0;
+  const away = parseInt(data.away_cheers) || 0;
+  const total = home + away || 1;
+  
+  const homePct = (home / total) * 100;
+  const awayPct = (away / total) * 100;
+  
+  DOM.hypeHome.style.width = `${homePct}%`;
+  DOM.hypeAway.style.width = `${awayPct}%`;
+  DOM.hypeStats.textContent = `${home} - ${away}`;
+}
+
+function renderPredictions(data) {
+  const h = parseInt(data.home_win) || 0;
+  const d = parseInt(data.draw) || 0;
+  const a = parseInt(data.away_win) || 0;
+  const total = h + d + a || 1;
+  
+  DOM.predHome.style.width = `${(h/total)*100}%`;
+  DOM.predDraw.style.width = `${(d/total)*100}%`;
+  DOM.predAway.style.width = `${(a/total)*100}%`;
+  
+  DOM.btnPredicts[0].innerHTML = `Home (${Math.round((h/total)*100)}%)`;
+  DOM.btnPredicts[1].innerHTML = `Draw (${Math.round((d/total)*100)}%)`;
+  DOM.btnPredicts[2].innerHTML = `Away (${Math.round((a/total)*100)}%)`;
+}
+
+// ==========================================
+// LINEUPS & RADAR
+// ==========================================
+function renderLineups(rosters) {
+  if (!rosters || rosters.length < 2) return;
+  DOM.homePlayers.innerHTML = '';
+  DOM.awayPlayers.innerHTML = '';
+  DOM.homeBench.innerHTML = '';
+  DOM.awayBench.innerHTML = '';
+  
+  const hRoster = rosters[0].roster;
+  const aRoster = rosters[1].roster;
+  
+  const plotPlayer = (player, container, bench, teamName) => {
+    if (player.starter && player.formationPlace) {
+      const p = parseInt(player.formationPlace);
+      // Fake x/y based on formation place for simplicity 
+      // 1 is GK, 2-5 are Def, etc.
+      let left = 50, top = 50;
+      if (p === 1) { left = 50; top = 10; }
+      else if (p >= 2 && p <= 5) { left = 15 + (p-2)*20; top = 30; }
+      else if (p >= 6 && p <= 8) { left = 25 + (p-6)*25; top = 60; }
+      else if (p >= 9 && p <= 11) { left = 25 + (p-9)*25; top = 85; }
+      else { left = 10 + Math.random()*80; top = 20 + Math.random()*60; }
+      
+      const dot = document.createElement('div');
+      dot.className = 'player-node';
+      dot.style.left = `${left}%`;
+      dot.style.top = `${top}%`;
+      dot.textContent = player.jersey;
+      dot.innerHTML += `<span>${player.athlete.shortName}</span>`;
+      dot.onclick = () => openPlayerModal(player, teamName);
+      container.appendChild(dot);
+    } else {
+      const li = document.createElement('li');
+      li.textContent = `${player.jersey} - ${player.athlete.displayName}`;
+      li.onclick = () => openPlayerModal(player, teamName);
+      bench.appendChild(li);
+    }
+  };
+  
+  hRoster.forEach(p => plotPlayer(p, DOM.homePlayers, DOM.homeBench, rosters[0].team.displayName));
+  aRoster.forEach(p => plotPlayer(p, DOM.awayPlayers, DOM.awayBench, rosters[1].team.displayName));
+}
+
+function openPlayerModal(player, teamName) {
+  DOM.playerName.textContent = player.athlete.displayName;
+  DOM.playerPos.textContent = player.position.displayName;
+  DOM.playerTeamName.textContent = teamName;
+  DOM.playerImg.src = player.athlete.headshot ? player.athlete.headshot.href : (player.athlete.jerseyImages ? player.athlete.jerseyImages[0].href : '');
+  
+  DOM.playerStatsGrid.innerHTML = '';
+  
+  // Extract stats for radar
+  const getS = (abb) => { const s = player.stats.find(x => x.abbreviation === abb); return s ? parseInt(s.displayValue) : 0; };
+  const apps = getS('APP');
+  const gls = getS('G') + getS('GA'); // Goals or Goals Against for GK
+  const ast = getS('A') + getS('SV'); // Assists or Saves
+  const sht = getS('SHOT') + getS('SHF');
+  const fls = getS('FC');
+  
+  const statsList = [
+    { label: 'Apps', val: apps },
+    { label: 'G/GA', val: gls },
+    { label: 'A/SV', val: ast },
+    { label: 'SHT', val: sht },
+    { label: 'FLS', val: fls }
+  ];
+  
+  statsList.forEach(s => {
+    DOM.playerStatsGrid.innerHTML += `<div class="p-stat-box"><div class="p-stat-val">${s.val}</div><div class="p-stat-label">${s.label}</div></div>`;
+  });
+  
+  drawRadar(statsList.map(s => s.val));
+  DOM.playerModal.classList.remove('hidden');
+}
+
+function drawRadar(values) {
+  const svg = DOM.radarChart;
+  svg.innerHTML = '';
+  const cx = 100, cy = 100, radius = 80;
+  
+  // Draw background web
+  for (let i = 1; i <= 4; i++) {
+    const r = (radius / 4) * i;
+    const pts = [];
+    for (let j = 0; j < 5; j++) {
+      const angle = (Math.PI * 2 * j) / 5 - Math.PI/2;
+      pts.push(`${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`);
+    }
+    svg.innerHTML += `<polygon points="${pts.join(' ')}" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>`;
+  }
+  
+  // Draw values (normalize loosely)
+  const maxVal = Math.max(...values, 10);
+  const dataPts = [];
+  values.forEach((v, j) => {
+    const r = (v / maxVal) * radius;
+    const angle = (Math.PI * 2 * j) / 5 - Math.PI/2;
+    const px = cx + r * Math.cos(angle);
+    const py = cy + r * Math.sin(angle);
+    dataPts.push(`${px},${py}`);
+    svg.innerHTML += `<circle cx="${px}" cy="${py}" r="4" fill="var(--color-primary)"/>`;
+  });
+  svg.innerHTML += `<polygon points="${dataPts.join(' ')}" fill="rgba(16,185,129,0.4)" stroke="var(--color-primary)" stroke-width="2"/>`;
+}
+
+DOM.btnCloseModal.addEventListener('click', () => DOM.playerModal.classList.add('hidden'));
+
+// Cheer & Prediction Listeners
+DOM.btnCheerHome.addEventListener('click', async () => {
+  if (!currentMatch) return;
+  DOM.btnCheerHome.disabled = true;
+  const res = await fetch(`/api/cheers?event=${currentMatch.id}`, {
+    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ teamType: 'home' })
+  });
+  const data = await res.json();
+  renderCheers(data);
+  DOM.btnCheerHome.disabled = false;
+});
+
+DOM.btnCheerAway.addEventListener('click', async () => {
+  if (!currentMatch) return;
+  DOM.btnCheerAway.disabled = true;
+  const res = await fetch(`/api/cheers?event=${currentMatch.id}`, {
+    method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ teamType: 'away' })
+  });
+  const data = await res.json();
+  renderCheers(data);
+  DOM.btnCheerAway.disabled = false;
+});
+
+DOM.btnPredicts.forEach(btn => {
+  btn.addEventListener('click', async () => {
+    if (!currentMatch) return;
+    DOM.btnPredicts.forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    const pred = btn.getAttribute('data-pred');
+    const res = await fetch(`/api/predictions?event=${currentMatch.id}`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ prediction: pred })
+    });
+    const data = await res.json();
+    renderPredictions(data);
+  });
+});
+
+// ==========================================
+// TOURNAMENT BRACKET
+// ==========================================
+async function fetchBracket() {
+  try {
+    const res = await fetch('/api/bracket');
+    const data = await res.json();
+    renderBracket(data.bracket);
+  } catch (err) {
+    DOM.bracketContainer.innerHTML = '<div class="loader">Error loading bracket.</div>';
+  }
+}
+
+function renderBracket(matches) {
+  if (!matches || matches.length === 0) {
+    DOM.bracketContainer.innerHTML = '<div class="loader">Knockout bracket not available yet.</div>';
+    return;
+  }
+  
+  // Group by phase
+  const phases = {};
+  matches.forEach(m => {
+    if (!phases[m.phase]) phases[m.phase] = [];
+    phases[m.phase].push(m);
+  });
+  
+  let html = '';
+  Object.keys(phases).forEach(phase => {
+    html += `
+      <div class="bracket-phase">
+        <h3>${phase}</h3>
+        <div class="bracket-matches">
+    `;
+    phases[phase].forEach(match => {
+      html += `
+        <div class="match-card" style="width: 320px; cursor: pointer" onclick="openMatchById('${match.id}')">
+          <div class="match-meta">
+            <span class="match-status">${match.status}</span>
+            <span class="match-clock">${new Date(match.date).toLocaleDateString()}</span>
+          </div>
+          <div class="teams">
+            <div class="team home">
+              <img src="${match.home.logo}" class="team-logo" loading="lazy" />
+              <span class="team-name">${match.home.name}</span>
+              <span class="team-score">${match.home.score !== undefined ? match.home.score : '-'}</span>
+            </div>
+            <div class="team away">
+              <img src="${match.away.logo}" class="team-logo" loading="lazy" />
+              <span class="team-name">${match.away.name}</span>
+              <span class="team-score">${match.away.score !== undefined ? match.away.score : '-'}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    html += `</div></div>`;
+  });
+  DOM.bracketContainer.innerHTML = html;
+}
+
+window.openMatchById = async (id) => {
+  // Try to find in scoreboard
+  const res = await fetch('/api/matches');
+  const data = await res.json();
+  const match = data.matches.find(m => m.id === id);
+  if (match) {
+    openMatchDetail(match);
+  }
+};
+
+// ==========================================
 // EVENT LISTENERS & INIT
 // ==========================================
 DOM.btnBack.addEventListener('click', () => {
@@ -514,6 +846,8 @@ async function init() {
   setInterval(() => {
     fetch('/api/cron/check-goals').catch(console.error);
   }, 120000); // Check every 2 minutes while app is open
+  
+  if (window.lucide) lucide.createIcons();
 }
 
 init();
