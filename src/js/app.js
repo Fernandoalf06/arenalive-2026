@@ -442,6 +442,11 @@ async function init() {
   }
   
   setInterval(fetchMatches, 60000);
+  
+  // Client-side fallback for Push Notifications (due to Vercel free tier limits)
+  setInterval(() => {
+    fetch('/api/cron/check-goals').catch(console.error);
+  }, 120000); // Check every 2 minutes while app is open
 }
 
 init();
