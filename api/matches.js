@@ -8,6 +8,17 @@ export default async function handler(req, res) {
       const homeTeam = comp.competitors.find(c => c.homeAway === 'home');
       const awayTeam = comp.competitors.find(c => c.homeAway === 'away');
       
+      const goalScorers = comp.details 
+        ? comp.details.filter(d => d.scoringPlay).map(d => ({
+            name: d.athletesInvolved?.[0]?.shortName || 'Unknown',
+            teamId: d.team?.id,
+            clock: d.clock?.displayValue || ''
+          }))
+        : [];
+      const headline = comp.headlines && comp.headlines.length > 0 
+        ? (comp.headlines[0].shortLinkText || comp.headlines[0].description) 
+        : '';
+      
       return {
         id: event.id,
         name: event.name,
@@ -15,13 +26,19 @@ export default async function handler(req, res) {
         status: comp.status.type.description,
         state: comp.status.type.state, // 'pre', 'in', 'post'
         clock: comp.status.displayClock,
+        venue: event.venue ? (event.venue.fullName || event.venue.displayName) : '',
+        attendance: comp.attendance || null,
+        goalScorers,
+        headline,
         home: {
+          id: homeTeam.team.id,
           name: homeTeam.team.displayName,
           logo: homeTeam.team.logo,
           score: homeTeam.score,
           winner: homeTeam.winner
         },
         away: {
+          id: awayTeam.team.id,
           name: awayTeam.team.displayName,
           logo: awayTeam.team.logo,
           score: awayTeam.score,

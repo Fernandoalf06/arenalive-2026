@@ -33,8 +33,24 @@ export default async function handler(req, res) {
     // Extract predictor
     const predictor = data.predictor || null;
 
+    // Extract newly discovered fields
+    const gameInfo = data.gameInfo || null;
+    const lastFiveGames = data.lastFiveGames || [];
+    const headToHeadGames = data.headToHeadGames || [];
+    const broadcasts = data.broadcasts || [];
+    const news = data.news || null;
+    const videos = data.videos || [];
+    const article = data.article || null;
+    const leaders = data.leaders || [];
+    const standings = data.standings || null;
+    const form = data.boxscore?.form || [];
+
     res.setHeader('Cache-Control', 's-maxage=10, stale-while-revalidate=20');
-    res.status(200).json({ commentary, keyEvents, boxscore, rosters, predictor });
+    res.status(200).json({ 
+      commentary, keyEvents, boxscore, rosters, predictor,
+      gameInfo, lastFiveGames, headToHeadGames, broadcasts, 
+      news, videos, article, leaders, standings, form
+    });
   } catch (error) {
     console.error('Error fetching commentary:', error);
     res.status(500).json({ error: 'Failed to fetch commentary' });

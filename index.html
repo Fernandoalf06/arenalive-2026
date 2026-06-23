@@ -81,6 +81,9 @@
       <div class="match-header-hero" id="detail-header">
         <!-- Match info injected here -->
       </div>
+
+      <div id="match-info-strip" class="match-info-strip hidden"></div>
+      <div id="broadcasts-strip" class="broadcasts-strip hidden"></div>
       
       <!-- Hype Meter & Predictions -->
       <div class="interactive-panel" id="interactive-panel">
@@ -115,9 +118,11 @@
       <nav class="detail-tabs">
         <button class="detail-tab-btn active" data-target="match-summary-tab">Summary</button>
         <button class="detail-tab-btn" data-target="match-lineups-tab">Lineups</button>
+        <button class="detail-tab-btn" data-target="match-media-tab">Media</button>
       </nav>
 
       <div id="match-summary-tab" class="detail-tab-content active-detail-tab">
+        <div id="form-h2h-section" class="form-h2h-section hidden"></div>
         <!-- Match Stats & Pitch -->
         <div class="match-stats-section hidden" id="match-stats-section">
           <h3>Match Stats</h3>
@@ -140,6 +145,9 @@
             <div class="loader">Loading events...</div>
           </div>
         </div>
+
+        <div id="match-leaders-section" class="match-leaders-section hidden"></div>
+        <div id="mini-standings-section" class="mini-standings-section hidden"></div>
       </div>
 
       <div id="match-lineups-tab" class="detail-tab-content hidden">
@@ -163,6 +171,10 @@
            </div>
         </div>
       </div>
+
+      <div id="match-media-tab" class="detail-tab-content hidden">
+        <div id="media-container"></div>
+      </div>
     </section>
   </main>
 
@@ -172,6 +184,7 @@
         <span class="match-status"></span>
         <span class="match-clock"></span>
       </div>
+      <div class="match-venue"></div>
       <button class="btn-favorite" title="Favorite this match" aria-label="Favorite"><i data-lucide="star"></i></button>
       <div class="teams">
         <div class="team home">
@@ -185,6 +198,8 @@
           <span class="team-score"></span>
         </div>
       </div>
+      <div class="goal-scorers"></div>
+      <div class="match-headline"></div>
       <button class="btn btn-view">View Coverage</button>
     </div>
   </template>

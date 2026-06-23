@@ -180,6 +180,21 @@ function renderMatches(matches) {
     awayTeam.querySelector('.team-name').textContent = match.away.name;
     awayTeam.querySelector('.team-score').textContent = match.away.score !== undefined ? match.away.score : '-';
 
+    const matchVenue = clone.querySelector('.match-venue');
+    if (matchVenue && match.venue) {
+      matchVenue.innerHTML = `<i data-lucide="map-pin"></i> ${match.venue}`;
+    }
+
+    const goalScorersDiv = clone.querySelector('.goal-scorers');
+    if (goalScorersDiv && match.goalScorers && match.goalScorers.length > 0) {
+      goalScorersDiv.innerHTML = match.goalScorers.map(g => `<div><i data-lucide="goal"></i> ${g.name} ${g.clock}</div>`).join('');
+    }
+
+    const headlineDiv = clone.querySelector('.match-headline');
+    if (headlineDiv && match.headline) {
+      headlineDiv.innerHTML = `<i data-lucide="newspaper"></i> ${match.headline}`;
+    }
+
     const isFav = favorites.includes(match.home.name) || favorites.includes(match.away.name);
     if (isFav) {
       card.classList.add('is-favorite');
@@ -250,6 +265,13 @@ async function fetchCommentary() {
     if (data.rosters) {
       renderLineups(data.rosters);
     }
+    
+    // New Feature Rendering
+    renderMatchInfo(data.gameInfo, data.broadcasts);
+    renderFormH2H(data.lastFiveGames, data.headToHeadGames, data.form);
+    renderMedia(data.news, data.videos, data.article);
+    renderMatchLeaders(data.leaders);
+    renderMiniStandings(data.standings);
   } catch (err) {
     console.error('Failed to fetch commentary', err);
   }
@@ -831,6 +853,206 @@ DOM.btnPush.addEventListener('click', async () => {
     }
   }
 });
+
+// ==========================================
+// NEW FEATURE RENDERING
+// ==========================================
+
+function renderMatchInfo(gameInfo, broadcasts) {
+  const infoStrip = document.getElementById('match-info-strip');
+  const broadcastStrip = document.getElementById('broadcasts-strip');
+  
+  if (gameInfo) {
+    infoStrip.classList.remove('hidden');
+    let html = '';
+    if (gameInfo.venue) html += `<span><i data-lucide="map-pin"></i> ${gameInfo.venue.fullName || gameInfo.venue.displayName}</span>`;
+    if (gameInfo.attendance) html += `<span><i data-lucide="users"></i> ${gameInfo.attendance.toLocaleString()}</span>`;
+    if (gameInfo.officials && gameInfo.officials.length > 0) {
+      const ref = gameInfo.officials.find(o => o.position && o.position.displayName === 'Referee') || gameInfo.officials[0];
+      html += `<span><i data-lucide="user"></i> ${ref.fullName}</span>`;
+    }
+    infoStrip.innerHTML = html;
+  } else {
+    infoStrip.classList.add('hidden');
+  }
+
+  if (broadcasts && broadcasts.length > 0) {
+    broadcastStrip.classList.remove('hidden');
+    broadcastStrip.innerHTML = `<strong>Where to Watch:</strong> ` + broadcasts.map(b => {
+      const icon = b.type?.shortName === 'STREAMING' ? 'monitor-play' : 'tv';
+      return `<span class="broadcast-chip"><i data-lucide="${icon}"></i> ${b.media?.shortName || b.market?.type}</span>`;
+    }).join('');
+  } else {
+    broadcastStrip.classList.add('hidden');
+  }
+}
+
+function renderFormH2H(lastFiveGames, headToHeadGames, form) {
+  const container = document.getElementById('form-h2h-section');
+  if (!lastFiveGames?.length && !headToHeadGames?.length && !form?.length) {
+    container.classList.add('hidden');
+    return;
+  }
+  
+  container.classList.remove('hidden');
+  
+  let html = '<h3>Form & Head-to-Head</h3><div class="form-h2h-grid">';
+  
+  if (form && form.length >= 2) {
+    html += '<div class="form-teams">';
+    [0, 1].forEach(i => {
+      const f = form[i];
+      if(!f) return;
+      html += `<div class="team-form"><span class="team-form-name">${f.team?.displayName || ''}</span><div class="form-circles">`;
+      if (f.events) {
+        f.events.forEach(e => {
+          let cClass = 'form-d';
+          if (e.gameResult === 'W') cClass = 'form-w';
+          if (e.gameResult === 'L') cClass = 'form-l';
+          html += `<div class="form-circle ${cClass}" title="${e.score} vs ${e.opponent?.abbreviation || '?'}">${e.gameResult}</div>`;
+        });
+      }
+      html += `</div></div>`;
+    });
+    html += '</div>';
+  }
+
+  if (headToHeadGames && headToHeadGames.length > 0) {
+    html += `<div class="h2h-summary"><h4>Past Meetings</h4><ul>`;
+    headToHeadGames.slice(0, 3).forEach(g => {
+       if (g.gameDate) {
+         html += `<li>${new Date(g.gameDate).getFullYear()}: ${g.homeTeamScore} - ${g.awayTeamScore}</li>`;
+       }
+    });
+    html += `</ul></div>`;
+  }
+  
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+function renderMedia(news, videos, article) {
+  const container = document.getElementById('media-container');
+  if ((!news || news.length === 0) && (!videos || videos.length === 0) && !article) {
+    container.innerHTML = '<p style="color:var(--color-text-muted); padding: 2rem; text-align: center;">No media available for this match.</p>';
+    return;
+  }
+  
+  let html = '';
+  
+  if (article && article.story) {
+    html += `<div class="recap-section">
+      <h3>Match Recap</h3>
+      <h4>${article.headline}</h4>
+      <div class="recap-story">${article.story.substring(0, 400)}... <a href="${article.links?.web?.href || '#'}" target="_blank">Read more</a></div>
+    </div>`;
+  }
+  
+  if (videos && videos.length > 0) {
+    html += `<h3>Highlights</h3><div class="videos-grid">`;
+    videos.slice(0, 2).forEach(v => {
+      const link = v.links?.source?.href || v.links?.web?.href || '#';
+      html += `<a href="${link}" target="_blank" class="video-card">
+        <div class="video-thumb"><img src="${v.thumbnail}" alt="thumb"><div class="play-overlay"><i data-lucide="play-circle"></i></div></div>
+        <div class="video-title">${v.headline}</div>
+      </a>`;
+    });
+    html += `</div>`;
+  }
+  
+  if (news && news.length > 0) {
+    html += `<h3>Latest News</h3><div class="news-list">`;
+    news.slice(0, 3).forEach(n => {
+      const link = n.links?.web?.href || '#';
+      html += `<a href="${link}" target="_blank" class="news-card">
+        ${n.images && n.images[0] ? `<img src="${n.images[0].url}" alt="news">` : ''}
+        <div class="news-content">
+          <h4>${n.headline}</h4>
+          <p>${n.description}</p>
+        </div>
+      </a>`;
+    });
+    html += `</div>`;
+  }
+  
+  container.innerHTML = html;
+}
+
+function renderMatchLeaders(leaders) {
+  const container = document.getElementById('match-leaders-section');
+  if (!leaders || leaders.length === 0) {
+    container.classList.add('hidden');
+    return;
+  }
+  
+  let hasValidLeaders = false;
+  let html = `<h3>Match Leaders</h3><div class="leaders-grid">`;
+  
+  leaders.forEach(teamLeader => {
+     if(teamLeader.leaders && teamLeader.leaders.length > 0) {
+        const firstCat = teamLeader.leaders[0];
+        if(firstCat.leaders && firstCat.leaders.length > 0) {
+           const topPlayer = firstCat.leaders[0];
+           hasValidLeaders = true;
+           html += `<div class="leader-card">
+             <img src="${topPlayer.athlete.headshot?.href || 'https://a.espncdn.com/i/headshots/nophoto.png'}" alt="player" loading="lazy">
+             <div class="leader-info">
+               <span class="l-name">${topPlayer.athlete.displayName}</span>
+               <span class="l-stat">${topPlayer.displayValue} ${firstCat.displayName}</span>
+             </div>
+           </div>`;
+        }
+     }
+  });
+  
+  html += `</div>`;
+  
+  if (hasValidLeaders) {
+    container.classList.remove('hidden');
+    container.innerHTML = html;
+  } else {
+    container.classList.add('hidden');
+  }
+}
+
+function renderMiniStandings(standings) {
+  const container = document.getElementById('mini-standings-section');
+  if (!standings || !standings.groups || standings.groups.length === 0) {
+    container.classList.add('hidden');
+    return;
+  }
+  
+  container.classList.remove('hidden');
+  const group = standings.groups[0];
+  
+  let html = `<h3>${group.name}</h3>
+    <div class="mini-standings-wrapper">
+    <table class="mini-standings-table">
+      <tr><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>GD</th><th>Pts</th></tr>`;
+      
+  if (group.standings && group.standings.entries) {
+    group.standings.entries.forEach(e => {
+       const stats = e.stats;
+       const getStat = name => {
+         const st = stats.find(s => s.name === name || s.abbreviation === name);
+         return st ? st.displayValue : '0';
+       };
+       const isCurrent = currentMatch && (e.team.id === currentMatch.home.id || e.team.id === currentMatch.away.id);
+       html += `<tr class="${isCurrent ? 'highlight' : ''}">
+         <td class="team-cell"><img src="${e.team.logos?.[0]?.href || ''}" class="ms-logo">${e.team.abbreviation}</td>
+         <td>${getStat('gamesPlayed') || getStat('GP')}</td>
+         <td>${getStat('wins') || getStat('W')}</td>
+         <td>${getStat('ties') || getStat('D')}</td>
+         <td>${getStat('losses') || getStat('L')}</td>
+         <td>${getStat('pointDifferential') || getStat('GD')}</td>
+         <td><strong>${getStat('points') || getStat('P')}</strong></td>
+       </tr>`;
+    });
+  }
+  
+  html += `</table></div>`;
+  container.innerHTML = html;
+}
 
 async function init() {
   initSpeech();
