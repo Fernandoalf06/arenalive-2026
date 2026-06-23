@@ -36,8 +36,8 @@ self.addEventListener('push', event => {
   const title = data.title || 'World Cup 2026 Update';
   const options = {
     body: data.body || 'A live match event has occurred.',
-    icon: '/manifest.json', // Using SVG as fallback for now
-    badge: '/manifest.json',
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
     vibrate: [200, 100, 200]
   };
 

@@ -8,8 +8,8 @@ export default async function handler(req, res) {
     
     // Set VAPID details
     webpush.setVapidDetails(
-      'mailto:test@example.com',
-      process.env.VITE_VAPID_PUBLIC_KEY || 'BL-M5zT196AJv0v2UdKGA17c_5VPxE7WO5_JyemAhQ3GmqEvWa2tP5D4SVF5NJYnGIaxG1ad20s_9ZRZbJie_kE',
+      process.env.VAPID_SUBJECT || 'mailto:test@example.com',
+      process.env.VAPID_PUBLIC_KEY || process.env.VITE_VAPID_PUBLIC_KEY || 'BL-M5zT196AJv0v2UdKGA17c_5VPxE7WO5_JyemAhQ3GmqEvWa2tP5D4SVF5NJYnGIaxG1ad20s_9ZRZbJie_kE',
       process.env.VAPID_PRIVATE_KEY
     );
 

@@ -29,7 +29,7 @@ const DOM = {
   btnPush: document.getElementById('btn-push')
 };
 
-let currentMatchId = null;
+let currentMatch = null;
 let pollInterval = null;
 let knownCommentary = new Set();
 let favorites = JSON.parse(localStorage.getItem('arenalive_favorites') || '[]');
@@ -151,7 +151,7 @@ function renderMatches(matches) {
 // MATCH DETAIL & COMMENTARY
 // ==========================================
 async function openMatchDetail(match) {
-  currentMatchId = match.id;
+  currentMatch = match;
   // Hide all tabs, show detail view
   DOM.views.forEach(v => v.classList.remove('view-active'));
   document.querySelector('.tabs').style.display = 'none';
@@ -181,9 +181,9 @@ async function openMatchDetail(match) {
 }
 
 async function fetchCommentary() {
-  if (!currentMatchId) return;
+  if (!currentMatch) return;
   try {
-    const res = await fetch(`/api/commentary?event=${currentMatchId}`);
+    const res = await fetch(`/api/commentary?event=${currentMatch.id}`);
     const data = await res.json();
     renderCommentary(data.commentary, data.keyEvents);
     if (data.boxscore) {
@@ -237,7 +237,73 @@ function renderBoxscore(teams) {
   });
 }
 
+function renderPitchEvents(keyEventsArr, homeTeamName, awayTeamName) {
+  DOM.pitchEvents.innerHTML = '';
+  if (!keyEventsArr || keyEventsArr.length === 0) return;
+
+  keyEventsArr.forEach(event => {
+    let icon = '📍';
+    let typeClass = 'other-event';
+    const text = event.text ? event.text.toLowerCase() : '';
+    const eventType = event.type ? event.type.toLowerCase() : '';
+    
+    if (text.includes('goal') || eventType.includes('goal')) {
+      icon = '⚽';
+      typeClass = 'goal-event';
+    } else if (text.includes('red card') || eventType.includes('red')) {
+      icon = '🟥';
+      typeClass = 'red-card-event';
+    } else if (text.includes('yellow card') || eventType.includes('yellow')) {
+      icon = '🟨';
+      typeClass = 'yellow-card-event';
+    } else if (text.includes('substitution') || eventType.includes('sub')) {
+      icon = '🔄';
+      typeClass = 'sub-event';
+    } else {
+      return;
+    }
+
+    const dot = document.createElement('div');
+    dot.className = `pitch-event-dot ${typeClass}`;
+    dot.innerHTML = icon;
+    
+    let leftPct = 50;
+    if (event.team) {
+      const isHome = event.team.toLowerCase().includes(homeTeamName.toLowerCase()) || 
+                     homeTeamName.toLowerCase().includes(event.team.toLowerCase());
+      const isAway = event.team.toLowerCase().includes(awayTeamName.toLowerCase()) || 
+                     awayTeamName.toLowerCase().includes(event.team.toLowerCase());
+      if (isHome) {
+        leftPct = 10 + Math.random() * 35;
+      } else if (isAway) {
+        leftPct = 55 + Math.random() * 35;
+      } else {
+        leftPct = 30 + Math.random() * 40;
+      }
+    } else {
+      leftPct = 20 + Math.random() * 60;
+    }
+    
+    const topPct = 15 + Math.random() * 70;
+    
+    dot.style.left = `${leftPct}%`;
+    dot.style.top = `${topPct}%`;
+    dot.style.position = 'absolute';
+    dot.style.transform = 'translate(-50%, -50%)';
+    dot.style.cursor = 'pointer';
+    dot.style.fontSize = '1.2rem';
+    dot.style.zIndex = '10';
+    dot.title = `${event.clock || ''}' - ${event.text}`;
+    
+    DOM.pitchEvents.appendChild(dot);
+  });
+}
+
 function renderCommentary(commentaryArr, keyEventsArr) {
+  if (currentMatch) {
+    renderPitchEvents(keyEventsArr, currentMatch.home.name, currentMatch.away.name);
+  }
+
   DOM.commentaryList.innerHTML = '';
   
   if (!commentaryArr || commentaryArr.length === 0) {
@@ -322,7 +388,7 @@ function renderStandings(groups) {
       
       html += `
         <tr>
-          <td>${getStat('rankChange') || entry.stats.find(s=>s.name === 'rank')?.displayValue || '-'}</td>
+          <td>${entry.stats.find(s=>s.name === 'rank')?.displayValue || getStat('rank') || '-'}</td>
           <td>
             <div class="standings-team">
               <img src="${entry.team.logos?.[0]?.href || ''}" class="standings-logo" loading="lazy">
@@ -366,7 +432,7 @@ function renderStats(statsArray) {
   statsArray.forEach(category => {
     html += `
       <div class="stat-category">
-        <h3>${category.name}</h3>
+        <h3>${category.displayName || category.name}</h3>
     `;
     if (category.leaders) {
       category.leaders.slice(0, 5).forEach((leader, idx) => {
@@ -376,7 +442,7 @@ function renderStats(statsArray) {
               <span class="stat-rank">${idx + 1}</span>
               <div>
                 <div class="stat-name">${leader.athlete.displayName}</div>
-                <div class="stat-team">${leader.team.displayName}</div>
+                <div class="stat-team">${leader.athlete.team?.displayName || leader.athlete.team?.name || ''}</div>
               </div>
             </div>
             <div class="stat-value">${leader.displayValue}</div>
@@ -398,7 +464,7 @@ DOM.btnBack.addEventListener('click', () => {
   const activeTab = document.querySelector('.tab-btn.active').getAttribute('data-target');
   document.getElementById(activeTab).classList.add('view-active');
   
-  currentMatchId = null;
+  currentMatch = null;
   if (pollInterval) clearInterval(pollInterval);
 });
 
