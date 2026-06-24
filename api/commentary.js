@@ -20,8 +20,8 @@ export default async function handler(req, res) {
       id: e.id,
       text: e.text,
       clock: e.clock ? e.clock.displayValue : '',
-      type: e.type ? e.type.text : 'Unknown',
-      team: e.team ? e.team.displayName : null
+      type: e.type ? (typeof e.type === 'string' ? e.type : e.type.text || 'Unknown') : 'Unknown',
+      team: e.team ? (typeof e.team === 'string' ? e.team : e.team.displayName || null) : null
     })) : [];
 
     // Extract boxscore stats
@@ -33,15 +33,88 @@ export default async function handler(req, res) {
     // Extract predictor
     const predictor = data.predictor || null;
 
-    // Extract newly discovered fields
+    // Extract game info
     const gameInfo = data.gameInfo || null;
-    const lastFiveGames = data.lastFiveGames || [];
-    const headToHeadGames = data.headToHeadGames || [];
-    const broadcasts = data.broadcasts || [];
-    const news = data.news || null;
-    const videos = data.videos || [];
-    const article = data.article || null;
-    const leaders = data.leaders || [];
+
+    // Transform lastFiveGames: ESPN returns {team: object, events: [{gameResult, ...}]}
+    // We need: {team: string, form: ['W','D','L',...]}
+    const lastFiveGames = (data.lastFiveGames || []).map(lfg => ({
+      team: typeof lfg.team === 'string' ? lfg.team : (lfg.team?.displayName || 'Unknown'),
+      form: (lfg.events || []).map(e => e.gameResult || '?')
+    }));
+
+    // Transform headToHeadGames: ESPN returns [{team: object, events: [{score, gameDate, ...}]}]
+    // We flatten to an array of individual past matches
+    const headToHeadGames = [];
+    if (data.headToHeadGames) {
+      for (const h2h of data.headToHeadGames) {
+        for (const evt of (h2h.events || [])) {
+          const scores = (evt.score || '0-0').split('-');
+          headToHeadGames.push({
+            date: evt.gameDate || '',
+            homeTeam: h2h.team?.displayName || 'Team',
+            homeScore: scores[0] || '0',
+            awayScore: scores[1] || '0',
+            awayTeam: evt.opponent?.displayName || 'Opponent',
+          });
+        }
+      }
+    }
+
+    // Transform broadcasts: ESPN returns {type: object, market: object, media: object}
+    // We need: {market: string, names: [string]}
+    const broadcasts = (data.broadcasts || []).map(b => ({
+      market: typeof b.market === 'string' ? b.market : (b.market?.type || b.region || 'Global'),
+      names: b.names || (b.media ? [b.media.shortName || b.media.name || b.media.callLetters || 'Unknown'] : []),
+      type: typeof b.type === 'string' ? b.type : (b.type?.shortName || 'TV')
+    }));
+
+    // Transform news: ESPN returns {header, link, articles: [...]}
+    // We need: array of {headline, description, image (string URL), link (string URL)}
+    const newsArticles = data.news?.articles || [];
+    const news = newsArticles.map(a => ({
+      headline: a.headline || '',
+      description: a.description || '',
+      image: a.images?.[0]?.url || null,
+      link: a.links?.web?.href || a.links?.mobile?.href || '#'
+    }));
+
+    // Transform videos: ESPN has images[] not thumbnail
+    const videos = (data.videos || []).map(v => ({
+      headline: v.headline || v.title || '',
+      thumbnail: v.thumbnail || v.images?.[0]?.url || v.posterImages?.default?.href || null,
+      link: v.links?.web?.href || v.links?.mobile?.href || '#'
+    }));
+
+    // Transform article
+    const rawArticle = data.article || null;
+    const article = rawArticle ? {
+      headline: rawArticle.headline || '',
+      story: typeof rawArticle.story === 'string' ? rawArticle.story : (rawArticle.description || ''),
+      link: rawArticle.links?.web?.href || rawArticle.links?.mobile?.href || null,
+      image: rawArticle.images?.[0]?.url || null
+    } : null;
+
+    // Transform leaders
+    const leaders = (data.leaders || []).map(teamLeader => ({
+      team: {
+        displayName: typeof teamLeader.team === 'string' ? teamLeader.team : (teamLeader.team?.displayName || 'Unknown'),
+        logo: typeof teamLeader.team === 'string' ? null : (teamLeader.team?.logo || teamLeader.team?.logos?.[0]?.href || null),
+      },
+      leaders: (teamLeader.leaders || []).map(cat => ({
+        displayName: cat.displayName || cat.name || 'Stat',
+        leaders: (cat.leaders || []).map(l => ({
+          displayValue: typeof l.displayValue === 'string' ? l.displayValue 
+            : (l.mainStat?.value || l.summary || ''),
+          athlete: {
+            displayName: l.athlete?.displayName || l.athlete?.fullName || 'Unknown Player',
+            headshot: l.athlete?.headshot?.href || l.athlete?.headshot || null,
+          }
+        }))
+      }))
+    }));
+
+    // Standings (pass through safely)
     const standings = data.standings || null;
     const form = data.boxscore?.form || [];
 

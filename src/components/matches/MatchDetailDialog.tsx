@@ -56,7 +56,7 @@ export default function MatchDetailDialog({ match, onClose }: { match: any, onCl
             <div className="flex flex-wrap gap-2 justify-center">
               {broadcasts.map((b: any, i: number) => (
                 <Badge key={i} variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30 flex gap-1">
-                  <Tv size={12}/> {b.market?.type || b.market} {b.names?.join(', ')}
+                  <Tv size={12}/> {String(b.market || '')} {Array.isArray(b.names) ? b.names.join(', ') : ''}
                 </Badge>
               ))}
             </div>
@@ -70,11 +70,11 @@ export default function MatchDetailDialog({ match, onClose }: { match: any, onCl
                <div className="space-y-3">
                  {lastFiveGames?.map((teamForm: any, i: number) => (
                    <div key={i} className="flex justify-between items-center">
-                     <span className="font-semibold text-sm">{teamForm.team}</span>
+                     <span className="font-semibold text-sm">{String(teamForm.team || 'Team')}</span>
                      <div className="flex gap-1">
-                       {teamForm.form?.map((f: string, j: number) => (
+                       {(Array.isArray(teamForm.form) ? teamForm.form : []).map((f: string, j: number) => (
                          <span key={j} className={`w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-bold text-white ${f==='W' ? 'bg-primary shadow-[0_0_5px_rgba(16,185,129,0.5)]' : f==='D' ? 'bg-yellow-500' : 'bg-destructive'}`}>
-                           {f}
+                           {String(f)}
                          </span>
                        ))}
                      </div>
@@ -90,8 +90,8 @@ export default function MatchDetailDialog({ match, onClose }: { match: any, onCl
                  <div className="space-y-2 text-sm text-muted-foreground">
                    {headToHeadGames.map((g: any, i: number) => (
                      <div key={i} className="flex justify-between border-b border-border/50 pb-1 last:border-0">
-                       <span>{new Date(g.date).getFullYear()}</span>
-                       <span className="font-medium text-foreground">{g.homeTeam} {g.homeScore} - {g.awayScore} {g.awayTeam}</span>
+                       <span>{g.date ? new Date(g.date).getFullYear() : '?'}</span>
+                       <span className="font-medium text-foreground">{String(g.homeTeam || '')} {String(g.homeScore || '0')} - {String(g.awayScore || '0')} {String(g.awayTeam || '')}</span>
                      </div>
                    ))}
                  </div>
@@ -146,12 +146,12 @@ export default function MatchDetailDialog({ match, onClose }: { match: any, onCl
             <div className="bg-card border border-border p-4 rounded-xl space-y-4">
               <h4 className="text-primary font-bold mb-3 border-b border-primary/20 pb-2">Match Stats</h4>
               <div className="flex justify-between text-sm font-bold px-2 mb-2">
-                <span>{boxscore[0]?.team?.abbreviation || 'HOME'}</span>
-                <span>{boxscore[1]?.team?.abbreviation || 'AWAY'}</span>
+                <span>{String(boxscore[0]?.team?.abbreviation || 'HOME')}</span>
+                <span>{String(boxscore[1]?.team?.abbreviation || 'AWAY')}</span>
               </div>
-              {boxscore[0].statistics?.map((stat: any, i: number) => {
-                const homeValStr = stat.displayValue;
-                const awayValStr = boxscore[1].statistics?.find((s:any) => s.name === stat.name)?.displayValue || '0';
+              {boxscore[0]?.statistics?.map((stat: any, i: number) => {
+                const homeValStr = String(stat.displayValue || '0');
+                const awayValStr = String(boxscore[1]?.statistics?.find((s:any) => s.name === stat.name)?.displayValue || '0');
                 const homeVal = parseFloat(homeValStr) || 0;
                 const awayVal = parseFloat(awayValStr) || 0;
                 const total = homeVal + awayVal;
@@ -162,7 +162,7 @@ export default function MatchDetailDialog({ match, onClose }: { match: any, onCl
                   <div key={i} className="space-y-1">
                     <div className="flex justify-between text-xs text-muted-foreground">
                       <span>{homeValStr}</span>
-                      <span className="uppercase tracking-wider">{stat.label || stat.name}</span>
+                      <span className="uppercase tracking-wider">{String(stat.label || stat.name || '')}</span>
                       <span>{awayValStr}</span>
                     </div>
                     <div className="flex h-2 w-full rounded-full overflow-hidden bg-secondary">
@@ -183,20 +183,20 @@ export default function MatchDetailDialog({ match, onClose }: { match: any, onCl
                 {leaders.map((teamLeaders: any, i: number) => (
                   <div key={i} className="space-y-4">
                     <div className="font-bold flex items-center gap-2">
-                      <img src={teamLeaders.team?.logo} className="w-5 h-5 object-contain"/> 
-                      {teamLeaders.team?.displayName}
+                      {teamLeaders.team?.logo && <img src={String(teamLeaders.team.logo)} className="w-5 h-5 object-contain"/>}
+                      {String(teamLeaders.team?.displayName || 'Team')}
                     </div>
                     {teamLeaders.leaders?.map((cat: any, j: number) => {
                       const leader = cat.leaders?.[0];
                       if (!leader) return null;
                       return (
                         <div key={j} className="flex items-center gap-3 bg-secondary/20 p-2 rounded-lg">
-                          <img src={leader.athlete?.headshot || 'https://a.espncdn.com/combiner/i?img=/i/headshots/nophoto.png'} className="w-10 h-10 rounded-full object-cover border border-border" />
+                          <img src={String(leader.athlete?.headshot || 'https://a.espncdn.com/combiner/i?img=/i/headshots/nophoto.png')} className="w-10 h-10 rounded-full object-cover border border-border" />
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs text-muted-foreground uppercase">{cat.displayName}</p>
-                            <p className="font-semibold text-sm truncate">{leader.athlete?.displayName || 'Unknown Player'}</p>
+                            <p className="text-xs text-muted-foreground uppercase">{String(cat.displayName || '')}</p>
+                            <p className="font-semibold text-sm truncate">{String(leader.athlete?.displayName || 'Unknown Player')}</p>
                           </div>
-                          <div className="text-lg font-bold text-primary">{leader.displayValue}</div>
+                          <div className="text-lg font-bold text-primary">{String(leader.displayValue || '')}</div>
                         </div>
                       )
                     })}
@@ -214,10 +214,10 @@ export default function MatchDetailDialog({ match, onClose }: { match: any, onCl
               <div className="space-y-3">
                 {keyEvents.map((ev: any, i: number) => (
                   <div key={i} className="flex items-start gap-3 text-sm border-b border-border/50 pb-2 last:border-0">
-                    <div className="font-bold text-primary min-w-[40px]">{ev.clock}</div>
+                    <div className="font-bold text-primary min-w-[40px]">{String(ev.clock || '')}</div>
                     <div>
-                      <p className="font-medium">{ev.text}</p>
-                      <p className="text-xs text-muted-foreground">{ev.type} • {ev.team}</p>
+                      <p className="font-medium">{String(ev.text || '')}</p>
+                      <p className="text-xs text-muted-foreground">{String(ev.type || '')} {ev.team ? `• ${String(ev.team)}` : ''}</p>
                     </div>
                   </div>
                 ))}
@@ -230,16 +230,16 @@ export default function MatchDetailDialog({ match, onClose }: { match: any, onCl
               {rosters.map((teamRoster: any, i: number) => (
                 <div key={i} className="bg-card border border-border p-4 rounded-xl">
                   <h4 className="font-bold mb-3 border-b border-border pb-2 flex items-center gap-2">
-                    {teamRoster.team?.displayName || 'Team'}
+                    {String(teamRoster.team?.displayName || 'Team')}
                   </h4>
                   <div className="space-y-2">
                     {teamRoster.roster?.map((player: any, j: number) => (
                       <div key={j} className="flex justify-between items-center text-sm border-b border-border/20 pb-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-muted-foreground text-xs w-4">{player.jersey}</span>
-                          <span>{player.athlete?.displayName}</span>
+                          <span className="text-muted-foreground text-xs w-4">{String(player.jersey || '')}</span>
+                          <span>{String(player.athlete?.displayName || '')}</span>
                         </div>
-                        <Badge variant="outline" className="text-[10px]">{player.position?.abbreviation}</Badge>
+                        <Badge variant="outline" className="text-[10px]">{String(player.position?.abbreviation || '')}</Badge>
                       </div>
                     ))}
                   </div>
@@ -257,10 +257,10 @@ export default function MatchDetailDialog({ match, onClose }: { match: any, onCl
           {/* Article */}
           {article && (
             <div className="bg-card border border-border p-4 rounded-xl">
-              <h4 className="text-lg font-bold mb-2">{article.headline}</h4>
-              <p className="text-sm text-muted-foreground mb-3">{article.story}</p>
+              <h4 className="text-lg font-bold mb-2">{String(article.headline || '')}</h4>
+              <p className="text-sm text-muted-foreground mb-3 line-clamp-4">{String(article.story || '')}</p>
               {article.link && (
-                <a href={article.link} target="_blank" rel="noreferrer" className="text-primary text-sm hover:underline">Read Full Article</a>
+                <a href={String(article.link)} target="_blank" rel="noreferrer" className="text-primary text-sm hover:underline">Read Full Article</a>
               )}
             </div>
           )}
@@ -269,13 +269,13 @@ export default function MatchDetailDialog({ match, onClose }: { match: any, onCl
           {videos?.length > 0 && (
              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                {videos.map((v: any, i: number) => (
-                 <a key={i} href={v.links?.web?.href || '#'} target="_blank" rel="noreferrer" className="group block relative rounded-xl overflow-hidden border border-border">
-                   <img src={v.thumbnail} alt={v.headline} className="w-full h-32 object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                 <a key={i} href={String(v.link || '#')} target="_blank" rel="noreferrer" className="group block relative rounded-xl overflow-hidden border border-border">
+                   {v.thumbnail && <img src={String(v.thumbnail)} alt={String(v.headline || '')} className="w-full h-32 object-cover opacity-80 group-hover:opacity-100 transition-opacity" />}
                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center group-hover:bg-black/20 transition-colors">
                      <Play className="text-white opacity-70 group-hover:opacity-100 group-hover:scale-110 transition-all group-hover:text-primary" size={32} />
                    </div>
                    <div className="absolute bottom-0 w-full bg-gradient-to-t from-black to-transparent p-2">
-                     <p className="text-xs text-white font-medium truncate">{v.headline}</p>
+                     <p className="text-xs text-white font-medium truncate">{String(v.headline || '')}</p>
                    </div>
                  </a>
                ))}
@@ -287,11 +287,11 @@ export default function MatchDetailDialog({ match, onClose }: { match: any, onCl
             <div className="space-y-3">
               <h4 className="text-primary font-bold border-b border-primary/20 pb-2">Latest News</h4>
               {news.map((n: any, i: number) => (
-                <a key={i} href={n.link} target="_blank" rel="noreferrer" className="flex gap-3 bg-card border border-border p-3 rounded-lg hover:bg-secondary/50 transition-colors">
-                  {n.image && <img src={n.image} alt={n.headline} className="w-16 h-16 object-cover rounded-md" />}
+                <a key={i} href={String(n.link || '#')} target="_blank" rel="noreferrer" className="flex gap-3 bg-card border border-border p-3 rounded-lg hover:bg-secondary/50 transition-colors">
+                  {n.image && <img src={String(n.image)} alt={String(n.headline || '')} className="w-16 h-16 object-cover rounded-md" />}
                   <div>
-                    <h5 className="font-semibold text-sm mb-1">{n.headline}</h5>
-                    <p className="text-xs text-muted-foreground line-clamp-2">{n.description}</p>
+                    <h5 className="font-semibold text-sm mb-1">{String(n.headline || '')}</h5>
+                    <p className="text-xs text-muted-foreground line-clamp-2">{String(n.description || '')}</p>
                   </div>
                 </a>
               ))}
@@ -309,21 +309,21 @@ export default function MatchDetailDialog({ match, onClose }: { match: any, onCl
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="flex flex-col items-center">
-                <img src={match?.home?.logo} alt={match?.home?.name} className="w-12 h-12 object-contain" />
-                <span className="text-xs mt-1 font-bold">{match?.home?.abbreviation}</span>
+                <img src={String(match?.home?.logo || '')} alt={String(match?.home?.name || '')} className="w-12 h-12 object-contain" />
+                <span className="text-xs mt-1 font-bold">{String(match?.home?.abbreviation || '')}</span>
               </div>
               <div className="text-3xl font-extrabold font-mono tracking-tighter">
-                {match?.home?.score !== undefined ? match.home.score : '-'} <span className="text-muted-foreground font-normal mx-1">:</span> {match?.away?.score !== undefined ? match.away.score : '-'}
+                {match?.home?.score !== undefined ? String(match.home.score) : '-'} <span className="text-muted-foreground font-normal mx-1">:</span> {match?.away?.score !== undefined ? String(match.away.score) : '-'}
               </div>
               <div className="flex flex-col items-center">
-                <img src={match?.away?.logo} alt={match?.away?.name} className="w-12 h-12 object-contain" />
-                <span className="text-xs mt-1 font-bold">{match?.away?.abbreviation}</span>
+                <img src={String(match?.away?.logo || '')} alt={String(match?.away?.name || '')} className="w-12 h-12 object-contain" />
+                <span className="text-xs mt-1 font-bold">{String(match?.away?.abbreviation || '')}</span>
               </div>
             </div>
           </DialogTitle>
           <DialogDescription className="text-center pt-2">
             <Badge variant={match.state === 'in' ? 'destructive' : 'secondary'} className={match.state === 'in' ? 'animate-pulse' : ''}>
-              {match.status} {match.clock && `• ${match.clock}`}
+              {String(match.status || '')} {match.clock ? `• ${String(match.clock)}` : ''}
             </Badge>
           </DialogDescription>
         </DialogHeader>

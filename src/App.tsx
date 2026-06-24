@@ -16,10 +16,10 @@ function App() {
           ArenaLive <span className="text-primary">2026</span>
         </div>
         <div className="flex gap-4">
-          <button className="text-muted-foreground hover:text-primary transition-colors">
+          <button className="text-muted-foreground hover:text-primary transition-colors" aria-label="Notifications" title="Notifications">
             <Bell size={20} />
           </button>
-          <button className="text-muted-foreground hover:text-primary transition-colors">
+          <button className="text-muted-foreground hover:text-primary transition-colors" aria-label="Sound settings" title="Sound settings">
             <Volume2 size={20} />
           </button>
         </div>
