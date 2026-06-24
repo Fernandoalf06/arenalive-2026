@@ -117,13 +117,13 @@ export default function MatchDetailDialog({ match, onClose }: { match: any, onCl
                 </thead>
                 <tbody>
                   {standings.groups[0].standings.entries.map((entry: any, i: number) => {
-                    const getStat = (name: string) => entry.stats.find((s:any) => s.name === name)?.displayValue || '0';
-                    const isPlaying = entry.team.id === match.home.id || entry.team.id === match.away.id;
+                    const getStat = (name: string) => entry.stats?.find((s:any) => s.name === name)?.displayValue || '0';
+                    const isPlaying = entry.team?.id === match.home?.id || entry.team?.id === match.away?.id;
                     return (
                       <tr key={i} className={`border-b border-border/50 last:border-0 ${isPlaying ? 'bg-primary/10' : ''}`}>
                         <td className="p-2 flex items-center gap-2">
-                          <img src={entry.team.logos?.[0]?.href} alt="" className="w-5 h-5 object-contain" />
-                          <span className="font-semibold">{entry.team.displayName}</span>
+                          <img src={entry.team?.logos?.[0]?.href} alt="" className="w-5 h-5 object-contain" />
+                          <span className="font-semibold">{entry.team?.displayName}</span>
                         </td>
                         <td className="p-2">{getStat('gamesPlayed')}</td>
                         <td className="p-2">{getStat('wins')}</td>
@@ -146,8 +146,8 @@ export default function MatchDetailDialog({ match, onClose }: { match: any, onCl
             <div className="bg-card border border-border p-4 rounded-xl space-y-4">
               <h4 className="text-primary font-bold mb-3 border-b border-primary/20 pb-2">Match Stats</h4>
               <div className="flex justify-between text-sm font-bold px-2 mb-2">
-                <span>{boxscore[0].team?.abbreviation || 'HOME'}</span>
-                <span>{boxscore[1].team?.abbreviation || 'AWAY'}</span>
+                <span>{boxscore[0]?.team?.abbreviation || 'HOME'}</span>
+                <span>{boxscore[1]?.team?.abbreviation || 'AWAY'}</span>
               </div>
               {boxscore[0].statistics?.map((stat: any, i: number) => {
                 const homeValStr = stat.displayValue;
@@ -183,18 +183,18 @@ export default function MatchDetailDialog({ match, onClose }: { match: any, onCl
                 {leaders.map((teamLeaders: any, i: number) => (
                   <div key={i} className="space-y-4">
                     <div className="font-bold flex items-center gap-2">
-                      <img src={teamLeaders.team.logo} className="w-5 h-5 object-contain"/> 
-                      {teamLeaders.team.displayName}
+                      <img src={teamLeaders.team?.logo} className="w-5 h-5 object-contain"/> 
+                      {teamLeaders.team?.displayName}
                     </div>
                     {teamLeaders.leaders?.map((cat: any, j: number) => {
                       const leader = cat.leaders?.[0];
                       if (!leader) return null;
                       return (
                         <div key={j} className="flex items-center gap-3 bg-secondary/20 p-2 rounded-lg">
-                          <img src={leader.athlete.headshot || 'https://a.espncdn.com/combiner/i?img=/i/headshots/nophoto.png'} className="w-10 h-10 rounded-full object-cover border border-border" />
+                          <img src={leader.athlete?.headshot || 'https://a.espncdn.com/combiner/i?img=/i/headshots/nophoto.png'} className="w-10 h-10 rounded-full object-cover border border-border" />
                           <div className="flex-1 min-w-0">
                             <p className="text-xs text-muted-foreground uppercase">{cat.displayName}</p>
-                            <p className="font-semibold text-sm truncate">{leader.athlete.displayName}</p>
+                            <p className="font-semibold text-sm truncate">{leader.athlete?.displayName || 'Unknown Player'}</p>
                           </div>
                           <div className="text-lg font-bold text-primary">{leader.displayValue}</div>
                         </div>
@@ -309,15 +309,15 @@ export default function MatchDetailDialog({ match, onClose }: { match: any, onCl
           <DialogTitle className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="flex flex-col items-center">
-                <img src={match.home.logo} alt={match.home.name} className="w-12 h-12 object-contain" />
-                <span className="text-xs mt-1 font-bold">{match.home.abbreviation}</span>
+                <img src={match?.home?.logo} alt={match?.home?.name} className="w-12 h-12 object-contain" />
+                <span className="text-xs mt-1 font-bold">{match?.home?.abbreviation}</span>
               </div>
               <div className="text-3xl font-extrabold font-mono tracking-tighter">
-                {match.home.score !== undefined ? match.home.score : '-'} <span className="text-muted-foreground font-normal mx-1">:</span> {match.away.score !== undefined ? match.away.score : '-'}
+                {match?.home?.score !== undefined ? match.home.score : '-'} <span className="text-muted-foreground font-normal mx-1">:</span> {match?.away?.score !== undefined ? match.away.score : '-'}
               </div>
               <div className="flex flex-col items-center">
-                <img src={match.away.logo} alt={match.away.name} className="w-12 h-12 object-contain" />
-                <span className="text-xs mt-1 font-bold">{match.away.abbreviation}</span>
+                <img src={match?.away?.logo} alt={match?.away?.name} className="w-12 h-12 object-contain" />
+                <span className="text-xs mt-1 font-bold">{match?.away?.abbreviation}</span>
               </div>
             </div>
           </DialogTitle>
