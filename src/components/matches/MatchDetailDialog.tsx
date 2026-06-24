@@ -56,7 +56,7 @@ export default function MatchDetailDialog({ match, onClose }: { match: any, onCl
             <div className="flex flex-wrap gap-2 justify-center">
               {broadcasts.map((b: any, i: number) => (
                 <Badge key={i} variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30 flex gap-1">
-                  <Tv size={12}/> {b.market} {b.names.join(', ')}
+                  <Tv size={12}/> {b.market} {b.names?.join(', ')}
                 </Badge>
               ))}
             </div>
@@ -72,7 +72,7 @@ export default function MatchDetailDialog({ match, onClose }: { match: any, onCl
                    <div key={i} className="flex justify-between items-center">
                      <span className="font-semibold text-sm">{teamForm.team}</span>
                      <div className="flex gap-1">
-                       {teamForm.form.map((f: string, j: number) => (
+                       {teamForm.form?.map((f: string, j: number) => (
                          <span key={j} className={`w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-bold text-white ${f==='W' ? 'bg-primary shadow-[0_0_5px_rgba(16,185,129,0.5)]' : f==='D' ? 'bg-yellow-500' : 'bg-destructive'}`}>
                            {f}
                          </span>
@@ -146,12 +146,12 @@ export default function MatchDetailDialog({ match, onClose }: { match: any, onCl
             <div className="bg-card border border-border p-4 rounded-xl space-y-4">
               <h4 className="text-primary font-bold mb-3 border-b border-primary/20 pb-2">Match Stats</h4>
               <div className="flex justify-between text-sm font-bold px-2 mb-2">
-                <span>{boxscore[0].team.abbreviation}</span>
-                <span>{boxscore[1].team.abbreviation}</span>
+                <span>{boxscore[0].team?.abbreviation || 'HOME'}</span>
+                <span>{boxscore[1].team?.abbreviation || 'AWAY'}</span>
               </div>
-              {boxscore[0].statistics.map((stat: any, i: number) => {
+              {boxscore[0].statistics?.map((stat: any, i: number) => {
                 const homeValStr = stat.displayValue;
-                const awayValStr = boxscore[1].statistics.find((s:any) => s.name === stat.name)?.displayValue || '0';
+                const awayValStr = boxscore[1].statistics?.find((s:any) => s.name === stat.name)?.displayValue || '0';
                 const homeVal = parseFloat(homeValStr) || 0;
                 const awayVal = parseFloat(awayValStr) || 0;
                 const total = homeVal + awayVal;
@@ -187,7 +187,7 @@ export default function MatchDetailDialog({ match, onClose }: { match: any, onCl
                       {teamLeaders.team.displayName}
                     </div>
                     {teamLeaders.leaders?.map((cat: any, j: number) => {
-                      const leader = cat.leaders[0];
+                      const leader = cat.leaders?.[0];
                       if (!leader) return null;
                       return (
                         <div key={j} className="flex items-center gap-3 bg-secondary/20 p-2 rounded-lg">
