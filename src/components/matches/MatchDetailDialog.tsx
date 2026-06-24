@@ -9,7 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 const fetcher = (url: string) => fetch(url).then((res) => res.json());
 
 export default function MatchDetailDialog({ match, onClose }: { match: any, onClose: () => void }) {
-  const { data, error, isLoading } = useSWR(match ? `/api/commentary?id=${match.id}` : null, fetcher, {
+  const { data, error, isLoading } = useSWR(match ? `/api/commentary?event=${match.id}` : null, fetcher, {
     refreshInterval: 30000,
   });
 
@@ -29,12 +29,13 @@ export default function MatchDetailDialog({ match, onClose }: { match: any, onCl
       return <div className="text-center py-10 text-muted-foreground">Detail pertandingan tidak tersedia saat ini.</div>;
     }
 
-    const { gameInfo, broadcasts, lastFiveGames, headToHeadGames, article, videos, news, leaders, standings } = data;
+    const { gameInfo, broadcasts, lastFiveGames, headToHeadGames, article, videos, news, leaders, standings, boxscore, rosters, keyEvents } = data;
 
     return (
       <Tabs defaultValue="summary" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 bg-secondary/50">
+        <TabsList className="grid w-full grid-cols-4 bg-secondary/50">
           <TabsTrigger value="summary">Summary</TabsTrigger>
+          <TabsTrigger value="stats">Stats</TabsTrigger>
           <TabsTrigger value="lineups">Lineups</TabsTrigger>
           <TabsTrigger value="media">Media</TabsTrigger>
         </TabsList>
@@ -98,16 +99,158 @@ export default function MatchDetailDialog({ match, onClose }: { match: any, onCl
              )}
           </div>
           
-          {/* Stats / Leaders placeholder */}
-          <div className="bg-card border border-border p-4 rounded-xl text-center text-muted-foreground text-sm">
-            Detailed stats rendering will go here...
-          </div>
+          {/* Mini Standings */}
+          {standings?.groups?.[0]?.standings?.entries && (
+            <div className="bg-card border border-border p-4 rounded-xl overflow-x-auto">
+              <h4 className="text-primary font-bold mb-3 border-b border-primary/20 pb-2">{standings.groups[0].name || 'Group Standings'}</h4>
+              <table className="w-full text-sm text-left">
+                <thead className="text-muted-foreground bg-secondary/30">
+                  <tr>
+                    <th className="p-2 rounded-tl-lg">Team</th>
+                    <th className="p-2">GP</th>
+                    <th className="p-2">W</th>
+                    <th className="p-2">D</th>
+                    <th className="p-2">L</th>
+                    <th className="p-2">GD</th>
+                    <th className="p-2 rounded-tr-lg">Pts</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {standings.groups[0].standings.entries.map((entry: any, i: number) => {
+                    const getStat = (name: string) => entry.stats.find((s:any) => s.name === name)?.displayValue || '0';
+                    const isPlaying = entry.team.id === match.home.id || entry.team.id === match.away.id;
+                    return (
+                      <tr key={i} className={`border-b border-border/50 last:border-0 ${isPlaying ? 'bg-primary/10' : ''}`}>
+                        <td className="p-2 flex items-center gap-2">
+                          <img src={entry.team.logos?.[0]?.href} alt="" className="w-5 h-5 object-contain" />
+                          <span className="font-semibold">{entry.team.displayName}</span>
+                        </td>
+                        <td className="p-2">{getStat('gamesPlayed')}</td>
+                        <td className="p-2">{getStat('wins')}</td>
+                        <td className="p-2">{getStat('ties')}</td>
+                        <td className="p-2">{getStat('losses')}</td>
+                        <td className="p-2">{getStat('pointDifferential')}</td>
+                        <td className="p-2 font-bold text-primary">{getStat('points')}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </TabsContent>
 
-        <TabsContent value="lineups" className="p-4">
-          <div className="text-center text-muted-foreground py-10">
-            Lineups are rendered based on team configurations...
-          </div>
+        <TabsContent value="stats" className="p-4 space-y-6">
+          {/* Boxscore Stats */}
+          {boxscore?.length === 2 && (
+            <div className="bg-card border border-border p-4 rounded-xl space-y-4">
+              <h4 className="text-primary font-bold mb-3 border-b border-primary/20 pb-2">Match Stats</h4>
+              <div className="flex justify-between text-sm font-bold px-2 mb-2">
+                <span>{boxscore[0].team.abbreviation}</span>
+                <span>{boxscore[1].team.abbreviation}</span>
+              </div>
+              {boxscore[0].statistics.map((stat: any, i: number) => {
+                const homeValStr = stat.displayValue;
+                const awayValStr = boxscore[1].statistics.find((s:any) => s.name === stat.name)?.displayValue || '0';
+                const homeVal = parseFloat(homeValStr) || 0;
+                const awayVal = parseFloat(awayValStr) || 0;
+                const total = homeVal + awayVal;
+                const homePercent = total > 0 ? (homeVal / total) * 100 : 50;
+                const awayPercent = total > 0 ? (awayVal / total) * 100 : 50;
+
+                return (
+                  <div key={i} className="space-y-1">
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>{homeValStr}</span>
+                      <span className="uppercase tracking-wider">{stat.label || stat.name}</span>
+                      <span>{awayValStr}</span>
+                    </div>
+                    <div className="flex h-2 w-full rounded-full overflow-hidden bg-secondary">
+                      <div style={{ width: `${homePercent}%` }} className="bg-primary" />
+                      <div style={{ width: `${awayPercent}%` }} className="bg-blue-500" />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
+          {/* Leaders */}
+          {leaders?.length > 0 && (
+            <div className="bg-card border border-border p-4 rounded-xl">
+              <h4 className="text-primary font-bold mb-4 border-b border-primary/20 pb-2">Top Performers</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {leaders.map((teamLeaders: any, i: number) => (
+                  <div key={i} className="space-y-4">
+                    <div className="font-bold flex items-center gap-2">
+                      <img src={teamLeaders.team.logo} className="w-5 h-5 object-contain"/> 
+                      {teamLeaders.team.displayName}
+                    </div>
+                    {teamLeaders.leaders?.map((cat: any, j: number) => {
+                      const leader = cat.leaders[0];
+                      if (!leader) return null;
+                      return (
+                        <div key={j} className="flex items-center gap-3 bg-secondary/20 p-2 rounded-lg">
+                          <img src={leader.athlete.headshot || 'https://a.espncdn.com/combiner/i?img=/i/headshots/nophoto.png'} className="w-10 h-10 rounded-full object-cover border border-border" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-muted-foreground uppercase">{cat.displayName}</p>
+                            <p className="font-semibold text-sm truncate">{leader.athlete.displayName}</p>
+                          </div>
+                          <div className="text-lg font-bold text-primary">{leader.displayValue}</div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="lineups" className="p-4 space-y-6">
+          {keyEvents?.length > 0 && (
+            <div className="bg-card border border-border p-4 rounded-xl">
+              <h4 className="text-primary font-bold mb-3 border-b border-primary/20 pb-2">Key Events</h4>
+              <div className="space-y-3">
+                {keyEvents.map((ev: any, i: number) => (
+                  <div key={i} className="flex items-start gap-3 text-sm border-b border-border/50 pb-2 last:border-0">
+                    <div className="font-bold text-primary min-w-[40px]">{ev.clock}</div>
+                    <div>
+                      <p className="font-medium">{ev.text}</p>
+                      <p className="text-xs text-muted-foreground">{ev.type} • {ev.team}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {rosters?.length === 2 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {rosters.map((teamRoster: any, i: number) => (
+                <div key={i} className="bg-card border border-border p-4 rounded-xl">
+                  <h4 className="font-bold mb-3 border-b border-border pb-2 flex items-center gap-2">
+                    {teamRoster.team?.displayName || 'Team'}
+                  </h4>
+                  <div className="space-y-2">
+                    {teamRoster.roster?.map((player: any, j: number) => (
+                      <div key={j} className="flex justify-between items-center text-sm border-b border-border/20 pb-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-muted-foreground text-xs w-4">{player.jersey}</span>
+                          <span>{player.athlete?.displayName}</span>
+                        </div>
+                        <Badge variant="outline" className="text-[10px]">{player.position?.abbreviation}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center text-muted-foreground py-10">
+              Lineups are not available yet.
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="media" className="p-4 space-y-6">
