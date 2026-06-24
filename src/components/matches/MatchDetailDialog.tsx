@@ -1,0 +1,192 @@
+import useSWR from 'swr';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { MapPin, Users, Activity, Play, FileText, Tv } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+
+const fetcher = (url: string) => fetch(url).then((res) => res.json());
+
+export default function MatchDetailDialog({ match, onClose }: { match: any, onClose: () => void }) {
+  const { data, error, isLoading } = useSWR(match ? `/api/commentary?id=${match.id}` : null, fetcher, {
+    refreshInterval: 30000,
+  });
+
+  if (!match) return null;
+
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="space-y-4 p-4">
+          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-64 w-full" />
+        </div>
+      );
+    }
+
+    if (error || !data || !data.gameInfo) {
+      return <div className="text-center py-10 text-muted-foreground">Detail pertandingan tidak tersedia saat ini.</div>;
+    }
+
+    const { gameInfo, broadcasts, lastFiveGames, headToHeadGames, article, videos, news, leaders, standings } = data;
+
+    return (
+      <Tabs defaultValue="summary" className="w-full">
+        <TabsList className="grid w-full grid-cols-3 bg-secondary/50">
+          <TabsTrigger value="summary">Summary</TabsTrigger>
+          <TabsTrigger value="lineups">Lineups</TabsTrigger>
+          <TabsTrigger value="media">Media</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="summary" className="p-4 space-y-6">
+          {/* Info Strip */}
+          <div className="flex flex-wrap items-center justify-center gap-4 bg-secondary/30 p-3 rounded-lg text-sm text-muted-foreground">
+             {gameInfo.venue?.fullName && (
+               <div className="flex items-center gap-2"><MapPin size={16} className="text-primary"/> {gameInfo.venue.fullName}</div>
+             )}
+             {gameInfo.attendance && (
+               <div className="flex items-center gap-2"><Users size={16} className="text-primary"/> {gameInfo.attendance.toLocaleString()}</div>
+             )}
+          </div>
+
+          {/* Broadcasts */}
+          {broadcasts?.length > 0 && (
+            <div className="flex flex-wrap gap-2 justify-center">
+              {broadcasts.map((b: any, i: number) => (
+                <Badge key={i} variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30 flex gap-1">
+                  <Tv size={12}/> {b.market} {b.names.join(', ')}
+                </Badge>
+              ))}
+            </div>
+          )}
+
+          {/* Form & H2H */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+             {/* Form */}
+             <div className="bg-card border border-border p-4 rounded-xl">
+               <h4 className="text-primary font-bold mb-3 border-b border-primary/20 pb-2">Recent Form</h4>
+               <div className="space-y-3">
+                 {lastFiveGames?.map((teamForm: any, i: number) => (
+                   <div key={i} className="flex justify-between items-center">
+                     <span className="font-semibold text-sm">{teamForm.team}</span>
+                     <div className="flex gap-1">
+                       {teamForm.form.map((f: string, j: number) => (
+                         <span key={j} className={`w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-bold text-white ${f==='W' ? 'bg-primary shadow-[0_0_5px_rgba(16,185,129,0.5)]' : f==='D' ? 'bg-yellow-500' : 'bg-destructive'}`}>
+                           {f}
+                         </span>
+                       ))}
+                     </div>
+                   </div>
+                 ))}
+               </div>
+             </div>
+
+             {/* H2H */}
+             {headToHeadGames?.length > 0 && (
+               <div className="bg-card border border-border p-4 rounded-xl">
+                 <h4 className="text-primary font-bold mb-3 border-b border-primary/20 pb-2">Head-to-Head</h4>
+                 <div className="space-y-2 text-sm text-muted-foreground">
+                   {headToHeadGames.map((g: any, i: number) => (
+                     <div key={i} className="flex justify-between border-b border-border/50 pb-1 last:border-0">
+                       <span>{new Date(g.date).getFullYear()}</span>
+                       <span className="font-medium text-foreground">{g.homeTeam} {g.homeScore} - {g.awayScore} {g.awayTeam}</span>
+                     </div>
+                   ))}
+                 </div>
+               </div>
+             )}
+          </div>
+          
+          {/* Stats / Leaders placeholder */}
+          <div className="bg-card border border-border p-4 rounded-xl text-center text-muted-foreground text-sm">
+            Detailed stats rendering will go here...
+          </div>
+        </TabsContent>
+
+        <TabsContent value="lineups" className="p-4">
+          <div className="text-center text-muted-foreground py-10">
+            Lineups are rendered based on team configurations...
+          </div>
+        </TabsContent>
+
+        <TabsContent value="media" className="p-4 space-y-6">
+          {/* Article */}
+          {article && (
+            <div className="bg-card border border-border p-4 rounded-xl">
+              <h4 className="text-lg font-bold mb-2">{article.headline}</h4>
+              <p className="text-sm text-muted-foreground mb-3">{article.story}</p>
+              {article.link && (
+                <a href={article.link} target="_blank" rel="noreferrer" className="text-primary text-sm hover:underline">Read Full Article</a>
+              )}
+            </div>
+          )}
+
+          {/* Videos */}
+          {videos?.length > 0 && (
+             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+               {videos.map((v: any, i: number) => (
+                 <a key={i} href={v.links?.web?.href || '#'} target="_blank" rel="noreferrer" className="group block relative rounded-xl overflow-hidden border border-border">
+                   <img src={v.thumbnail} alt={v.headline} className="w-full h-32 object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center group-hover:bg-black/20 transition-colors">
+                     <Play className="text-white opacity-70 group-hover:opacity-100 group-hover:scale-110 transition-all group-hover:text-primary" size={32} />
+                   </div>
+                   <div className="absolute bottom-0 w-full bg-gradient-to-t from-black to-transparent p-2">
+                     <p className="text-xs text-white font-medium truncate">{v.headline}</p>
+                   </div>
+                 </a>
+               ))}
+             </div>
+          )}
+          
+          {/* News */}
+          {news?.length > 0 && (
+            <div className="space-y-3">
+              <h4 className="text-primary font-bold border-b border-primary/20 pb-2">Latest News</h4>
+              {news.map((n: any, i: number) => (
+                <a key={i} href={n.link} target="_blank" rel="noreferrer" className="flex gap-3 bg-card border border-border p-3 rounded-lg hover:bg-secondary/50 transition-colors">
+                  {n.image && <img src={n.image} alt={n.headline} className="w-16 h-16 object-cover rounded-md" />}
+                  <div>
+                    <h5 className="font-semibold text-sm mb-1">{n.headline}</h5>
+                    <p className="text-xs text-muted-foreground line-clamp-2">{n.description}</p>
+                  </div>
+                </a>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+    );
+  };
+
+  return (
+    <Dialog open={!!match} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0 bg-background/95 backdrop-blur-xl border-border/50">
+        <DialogHeader className="p-6 pb-4 border-b border-border/50 bg-card/50 sticky top-0 z-10">
+          <DialogTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex flex-col items-center">
+                <img src={match.home.logo} alt={match.home.name} className="w-12 h-12 object-contain" />
+                <span className="text-xs mt-1 font-bold">{match.home.abbreviation}</span>
+              </div>
+              <div className="text-3xl font-extrabold font-mono tracking-tighter">
+                {match.home.score !== undefined ? match.home.score : '-'} <span className="text-muted-foreground font-normal mx-1">:</span> {match.away.score !== undefined ? match.away.score : '-'}
+              </div>
+              <div className="flex flex-col items-center">
+                <img src={match.away.logo} alt={match.away.name} className="w-12 h-12 object-contain" />
+                <span className="text-xs mt-1 font-bold">{match.away.abbreviation}</span>
+              </div>
+            </div>
+          </DialogTitle>
+          <DialogDescription className="text-center pt-2">
+            <Badge variant={match.state === 'in' ? 'destructive' : 'secondary'} className={match.state === 'in' ? 'animate-pulse' : ''}>
+              {match.status} {match.clock && `• ${match.clock}`}
+            </Badge>
+          </DialogDescription>
+        </DialogHeader>
+
+        {renderContent()}
+      </DialogContent>
+    </Dialog>
+  );
+}
