@@ -12,7 +12,7 @@ export default async function handler(req, res) {
           displayName: l.athlete?.displayName || l.athlete?.shortName || 'Unknown',
           headshot: typeof l.athlete?.headshot === 'string' 
             ? l.athlete.headshot 
-            : (l.athlete?.headshot?.href || 'https://a.espncdn.com/combiner/i?img=/i/headshots/nophoto.png'),
+            : (l.athlete?.headshot?.href || l.athlete?.jerseyImage?.[0]?.href || 'https://a.espncdn.com/combiner/i?img=/i/headshots/nophoto.png'),
         },
         team: {
           displayName: l.athlete?.team?.displayName || l.team?.displayName || '',

@@ -108,7 +108,9 @@ export default async function handler(req, res) {
             : (l.mainStat?.value || l.summary || ''),
           athlete: {
             displayName: l.athlete?.displayName || l.athlete?.fullName || 'Unknown Player',
-            headshot: l.athlete?.headshot?.href || l.athlete?.headshot || null,
+            headshot: typeof l.athlete?.headshot === 'string' 
+              ? l.athlete.headshot 
+              : (l.athlete?.headshot?.href || l.athlete?.jerseyImage?.[0]?.href || null),
           }
         }))
       }))
