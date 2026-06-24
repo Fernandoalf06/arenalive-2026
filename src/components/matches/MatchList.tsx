@@ -1,7 +1,7 @@
 import useSWR from 'swr';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Star, MapPin, Goal, Newspaper } from 'lucide-react';
+import { Star, MapPin, Goal, Newspaper, Calendar, Clock } from 'lucide-react';
 import { useState } from 'react';
 import MatchDetailDialog from './MatchDetailDialog';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -53,8 +53,18 @@ export default function MatchList() {
     const bFav = favorites.includes(b.home.name) || favorites.includes(b.away.name);
     if (aFav && !bFav) return -1;
     if (!aFav && bFav) return 1;
-    return 0;
+    // Within same fav status, sort by date
+    return new Date(a.date).getTime() - new Date(b.date).getTime();
   });
+
+  const formatMatchDate = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const timeZone = 'Asia/Jakarta';
+    const day = d.toLocaleDateString('id-ID', { weekday: 'short', timeZone });
+    const date = d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', timeZone });
+    const time = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', timeZoneName: 'short', timeZone });
+    return { day, date, time };
+  };
 
   return (
     <>
@@ -62,6 +72,7 @@ export default function MatchList() {
         {sortedMatches.map((match: any) => {
           const isFav = favorites.includes(match.home.name) || favorites.includes(match.away.name);
           const isLive = match.state === 'in';
+          const matchDate = match.date ? formatMatchDate(match.date) : null;
           
           return (
             <Card 
@@ -80,11 +91,26 @@ export default function MatchList() {
                   <button 
                     onClick={(e) => toggleFav(match.home.name, e)}
                     className={`p-1.5 rounded-full transition-colors ${isFav ? 'text-yellow-500 bg-yellow-500/10' : 'text-muted-foreground hover:bg-secondary'}`}
+                    aria-label={isFav ? 'Remove from favorites' : 'Add to favorites'}
                   >
                     <Star size={16} fill={isFav ? "currentColor" : "none"} />
                   </button>
                 </div>
                 
+                {/* Date & Time */}
+                {matchDate && (
+                  <div className="flex items-center justify-center gap-4 py-2 bg-secondary/20 text-xs text-muted-foreground border-b border-border/30">
+                    <div className="flex items-center gap-1">
+                      <Calendar size={12} className="text-primary/70" />
+                      <span>{matchDate.day}, {matchDate.date}</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Clock size={12} className="text-primary/70" />
+                      <span>{matchDate.time}</span>
+                    </div>
+                  </div>
+                )}
+
                 {match.venue && (
                   <div className="text-xs text-muted-foreground text-center py-1.5 bg-secondary/30 flex items-center justify-center gap-1">
                     <MapPin size={12} /> {match.venue}

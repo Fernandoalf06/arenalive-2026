@@ -33,6 +33,7 @@ export default async function handler(req, res) {
         home: {
           id: homeTeam.team.id,
           name: homeTeam.team.displayName,
+          abbreviation: homeTeam.team.abbreviation || '',
           logo: homeTeam.team.logo,
           score: homeTeam.score,
           winner: homeTeam.winner
@@ -40,6 +41,7 @@ export default async function handler(req, res) {
         away: {
           id: awayTeam.team.id,
           name: awayTeam.team.displayName,
+          abbreviation: awayTeam.team.abbreviation || '',
           logo: awayTeam.team.logo,
           score: awayTeam.score,
           winner: awayTeam.winner
