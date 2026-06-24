@@ -56,7 +56,7 @@ export default function MatchDetailDialog({ match, onClose }: { match: any, onCl
             <div className="flex flex-wrap gap-2 justify-center">
               {broadcasts.map((b: any, i: number) => (
                 <Badge key={i} variant="outline" className="bg-blue-500/10 text-blue-400 border-blue-500/30 flex gap-1">
-                  <Tv size={12}/> {b.market} {b.names?.join(', ')}
+                  <Tv size={12}/> {b.market?.type || b.market} {b.names?.join(', ')}
                 </Badge>
               ))}
             </div>
