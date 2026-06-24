@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Bell, Volume2 } from 'lucide-react';
 import MatchList from '@/components/matches/MatchList';
+import GlobalStandings from '@/components/standings/GlobalStandings';
+import GlobalStats from '@/components/stats/GlobalStats';
+import KnockoutBracket from '@/components/bracket/KnockoutBracket';
 
 function App() {
   const [activeTab, setActiveTab] = useState('matches');
@@ -41,19 +44,19 @@ function App() {
             <MatchList />
           </TabsContent>
 
-          <TabsContent value="standings">
+          <TabsContent value="standings" className="mt-0">
             <h2 className="text-2xl font-bold mb-6">Group Stage Standings</h2>
-            <div className="text-center text-muted-foreground py-10">Standings coming soon...</div>
+            <GlobalStandings />
           </TabsContent>
 
-          <TabsContent value="bracket">
+          <TabsContent value="bracket" className="mt-0">
             <h2 className="text-2xl font-bold mb-6">Knockout Bracket</h2>
-            <div className="text-center text-muted-foreground py-10">Bracket coming soon...</div>
+            <KnockoutBracket />
           </TabsContent>
 
-          <TabsContent value="stats">
+          <TabsContent value="stats" className="mt-0">
             <h2 className="text-2xl font-bold mb-6">Tournament Leaders</h2>
-            <div className="text-center text-muted-foreground py-10">Stats coming soon...</div>
+            <GlobalStats />
           </TabsContent>
         </Tabs>
       </main>
